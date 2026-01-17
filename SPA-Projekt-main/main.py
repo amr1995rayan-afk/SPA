@@ -1,8 +1,6 @@
-
-# Ensure environment variables are loaded before any other imports
 import os
 from dotenv import load_dotenv
-load_dotenv(".env")
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -33,27 +31,44 @@ def main():
 
     # Rechter Bereich: To-Do-Liste, Wetter-Widget, Chatbot
     # Frame für die rechte Spalte erstellen
+
     right_frame = ttk.Frame(root, bootstyle="secondary")
     right_frame.grid(row=1, column=1, sticky="nsew", padx=5, pady=5)
-    right_frame.rowconfigure(0, weight=1)  # To-Do-Liste (weniger Höhe)
-    right_frame.rowconfigure(1, weight=2)  # Wetter-Widget (größer)
-    right_frame.rowconfigure(2, weight=2)  # Timer-Widget (größer)
-    right_frame.rowconfigure(3, weight=2)  # Chatbot (größer)
+    # Configure right_frame for 3 widgets in the top row, chatbot below
+    right_frame.rowconfigure(0, weight=1)  # Top row: To-Do, Weather, Timer
+    right_frame.rowconfigure(1, weight=10)  # Bottom: Chatbot (very large)
     right_frame.columnconfigure(0, weight=1)
+    right_frame.columnconfigure(1, weight=1)
+    right_frame.columnconfigure(2, weight=1)
 
-    # To-Do-Liste oben rechts (row 0)
-    create_todo_list(right_frame)
+    # Top row: To-Do (col 0), Weather (col 1), Timer (col 2)
+    todo_frame = ttk.Frame(right_frame)
+    todo_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
-    # Wetter-Widget mittig rechts (row 1)
-    create_weather_widget(right_frame)
+    # ✅ add these:
+    todo_frame.rowconfigure(0, weight=1)
+    todo_frame.columnconfigure(0, weight=1)
 
-    # Timer-Widget mittig rechts (row 2)
-    create_timer_widget(right_frame)
+    create_todo_list(todo_frame)
 
-    # Chatbot unten rechts (row 3)
-    chatbot_frame = ttk.Labelframe(right_frame, text="Chatbot", bootstyle="warning")
-    chatbot_frame.grid(row=3, column=0, sticky="nsew", padx=5, pady=5)
+    weather_frame = ttk.Frame(right_frame)
+    weather_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=5)
+    create_weather_widget(weather_frame)
+
+
+    timer_frame = ttk.Frame(right_frame)
+    timer_frame.grid(row=0, column=2, sticky="nsew", padx=5, pady=5)
+    create_timer_widget(timer_frame)
+
+    # Chatbot takes the entire lower section (row 1, spans all columns, direct child, no extra container)
+    chatbot_frame = ttk.Frame(right_frame)
+    chatbot_frame.grid(row=1, column=0, columnspan=3, sticky="nsew", padx=5, pady=5)
+    right_frame.grid_rowconfigure(1, weight=10)
     create_chatbot(chatbot_frame)
+
+    weather_frame.rowconfigure(0, weight=1); weather_frame.columnconfigure(0, weight=1)
+    timer_frame.rowconfigure(0, weight=1);   timer_frame.columnconfigure(0, weight=1)
+    chatbot_frame.rowconfigure(0, weight=1); chatbot_frame.columnconfigure(0, weight=1)
 
     # Haupt-Loop starten
     root.mainloop()

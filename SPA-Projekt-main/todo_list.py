@@ -7,17 +7,16 @@ def create_todo_list(root):
 
     # --- Frame ---
     # To-Do-Liste erstellen
-    todo_frame = ttk.Labelframe(root, text="To-Do List", bootstyle="primary", height=100)  # Höhe direkt begrenzen
+    todo_frame = ttk.Labelframe(root, text="To-Do List", bootstyle="primary")  # Höhe direkt begrenzen
     todo_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
     # Spaltenbreite konfigurieren
     todo_frame.grid_columnconfigure(0, weight=1)
 
     # Zeilenhöhe konfigurieren (reduzieren)
-    todo_frame.grid_rowconfigure(1, weight=0)  # Minimale Höhe
+    todo_frame.grid_rowconfigure(2, weight=1)  # Minimale Höhe
 
-    # Übergeordneten Container konfigurieren
-    root.rowconfigure(0, weight=1)  # Weniger Platz für die Zeile 0
+
     # ======================
     #   Toolbar: 2 Buttons
     # ======================

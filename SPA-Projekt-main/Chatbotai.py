@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-load_dotenv(".env")
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 import threading
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
@@ -9,6 +9,7 @@ from ttkbootstrap.scrolled import ScrolledText
 from openai import OpenAI
 
 def build_chat_ui(parent):
+    print("✅ build_chat_ui CALLED")
     """
     Builds a chat UI inside `parent`.
     Requires env var GITHUB_TOKEN (for GitHub Models) or OPENAI_API_KEY (for OpenAI).
@@ -66,6 +67,9 @@ def build_chat_ui(parent):
         user_entry.config(state="disabled" if is_busy else "normal")
 
     def send_message(event=None):
+        print("SEND CLICKED")
+
+
         user_text = user_entry.get().strip()
         if not user_text:
             return
