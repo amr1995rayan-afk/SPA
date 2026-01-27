@@ -59,12 +59,14 @@ def build_weather_ui(parent, default_city="Berlin"):
         threading.Thread(target=worker, daemon=True).start()
 
     ttk.Label(frm, text="City:").grid(row=0, column=0, sticky="w")
-    ttk.Entry(frm, textvariable=city_var).grid(row=0, column=1, sticky="ew", padx=8)
+    ttk.Entry(frm, textvariable=city_var).grid(
+        row=0, column=1, sticky="ew", padx=8)
 
     btn = ttk.Button(frm, text="Get Weather", command=fetch_weather)
     btn.grid(row=0, column=2)
 
-    ttk.Separator(frm).grid(row=1, column=0, columnspan=3, pady=10, sticky="ew")
+    ttk.Separator(frm).grid(row=1, column=0,
+                            columnspan=3, pady=10, sticky="ew")
 
     labels = [
         ("Location", city_out),
@@ -76,9 +78,11 @@ def build_weather_ui(parent, default_city="Berlin"):
 
     for i, (label, var) in enumerate(labels, start=2):
         ttk.Label(frm, text=label).grid(row=i, column=0, sticky="w")
-        ttk.Label(frm, textvariable=var).grid(row=i, column=1, columnspan=2, sticky="w")
+        ttk.Label(frm, textvariable=var).grid(
+            row=i, column=1, columnspan=2, sticky="w")
 
-    ttk.Label(frm, textvariable=status_var).grid(row=8, column=0, columnspan=3, pady=10, sticky="w")
+    ttk.Label(frm, textvariable=status_var).grid(
+        row=8, column=0, columnspan=3, pady=10, sticky="w")
 
     frm.columnconfigure(1, weight=1)
 

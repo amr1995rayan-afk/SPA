@@ -2,7 +2,8 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 
-from Chatbotai import build_chat_ui   # ✅ import your real chat UI
+from Chatbotai import build_chat_ui
+
 
 def create_chatbot(parent):
     parent.rowconfigure(0, weight=1)

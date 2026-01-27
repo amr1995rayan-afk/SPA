@@ -1,12 +1,12 @@
+from openai import OpenAI
+from ttkbootstrap.scrolled import ScrolledText
+from ttkbootstrap.constants import *
+import ttkbootstrap as ttk
+import threading
 import os
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-import threading
-import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-from ttkbootstrap.scrolled import ScrolledText
 
-from openai import OpenAI
 
 def build_chat_ui(parent):
     print("✅ build_chat_ui CALLED")
@@ -15,25 +15,55 @@ def build_chat_ui(parent):
     Requires env var GITHUB_TOKEN (for GitHub Models) or OPENAI_API_KEY (for OpenAI).
     """
 
-    # --- Choose ONE of these setups ---
-
-    # A) GitHub Models (recommended if you're using GITHUB_TOKEN)
-    token = os.getenv("GITHUB_TOKEN")
-    if not token:
-        raise RuntimeError("Set GITHUB_TOKEN in your environment first.")
-    client = OpenAI(api_key=token, base_url="https://models.github.ai/inference")
-
-    # B) OpenAI Platform (uncomment if using OPENAI_API_KEY instead)
-    # key = os.getenv("OPENAI_API_KEY")
-    # if not key:
-    #     raise RuntimeError("Set OPENAI_API_KEY in your environment first.")
-    # client = OpenAI(api_key=key)
-
-    model_name = "gpt-4o-mini"
-
     # --- Frame ---
     frame = ttk.Frame(parent, padding=10)
     frame.pack(fill=BOTH, expand=True)
+
+    # --- Provider Selection ---
+    provider_frame = ttk.Frame(frame)
+    provider_frame.pack(fill=X, pady=(0, 10))
+
+    ttk.Label(provider_frame, text="KI-Anbieter:").pack(side="left", padx=(0, 10))
+
+    provider_var = ttk.StringVar(value="github")
+    providers = {
+        "github": "GitHub Models",
+        "openai": "OpenAI",
+        "perplexity": "Perplexity"
+    }
+
+    for key, label in providers.items():
+        ttk.Radiobutton(provider_frame, text=label,
+                        variable=provider_var, value=key).pack(side="left", padx=5)
+
+    # --- Initialize client based on provider ---
+    def get_client():
+        provider = provider_var.get()
+
+        if provider == "github":
+            token = os.getenv("GITHUB_TOKEN")
+            if not token:
+                raise RuntimeError(
+                    "Set GITHUB_TOKEN in your environment first.")
+            client = OpenAI(
+                api_key=token, base_url="https://models.github.ai/inference")
+            return client, "gpt-4o-mini"
+
+        elif provider == "openai":
+            key = os.getenv("OPENAI_API_KEY")
+            if not key:
+                raise RuntimeError(
+                    "Set OPENAI_API_KEY in your environment first.")
+            client = OpenAI(api_key=key)
+            return client, "gpt-4o-mini"
+
+        elif provider == "perplexity":
+            key = os.getenv("PERPLEXITY_API_KEY")
+            if not key:
+                raise RuntimeError(
+                    "Set PERPLEXITY_API_KEY in your environment first.")
+            client = OpenAI(api_key=key, base_url="https://api.perplexity.ai")
+            return client, "llama-3.1-sonar-small-128k-online"
 
     # --- Conversation state ---
     messages = [{"role": "system", "content": "You are a helpful assistant."}]
@@ -41,7 +71,8 @@ def build_chat_ui(parent):
     # --- Widgets ---
     chat_box = ScrolledText(frame, autohide=True, height=14)
     chat_box.pack(fill=BOTH, expand=True)
-    chat_box.text.configure(state="disabled")  # ScrolledText wraps a Text widget
+    # ScrolledText wraps a Text widget
+    chat_box.text.configure(state="disabled")
 
     status_var = ttk.StringVar(value="Ready")
     ttk.Label(frame, textvariable=status_var).pack(anchor="w", pady=(6, 0))
@@ -69,7 +100,6 @@ def build_chat_ui(parent):
     def send_message(event=None):
         print("SEND CLICKED")
 
-
         user_text = user_entry.get().strip()
         if not user_text:
             return
@@ -83,6 +113,7 @@ def build_chat_ui(parent):
 
         def worker():
             try:
+                client, model_name = get_client()
                 resp = client.chat.completions.create(
                     model=model_name,
                     messages=messages,

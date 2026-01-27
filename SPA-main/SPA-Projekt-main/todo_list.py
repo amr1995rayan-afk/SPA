@@ -2,12 +2,34 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import tkinter as tk
 from tkinter import messagebox
+import json
+import os
+
 
 def create_todo_list(root):
 
+    # --- JSON Datei-Verwaltung ---
+    todo_file = os.path.join(os.path.dirname(__file__), "tasks.json")
+
+    def load_tasks():
+        """Lädt Aufgaben aus JSON Datei"""
+        if os.path.exists(todo_file):
+            try:
+                with open(todo_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                return []
+        return []
+
+    def save_tasks(tasks):
+        """Speichert Aufgaben in JSON Datei"""
+        with open(todo_file, 'w', encoding='utf-8') as f:
+            json.dump(tasks, f, ensure_ascii=False, indent=2)
+
     # --- Frame ---
     # To-Do-Liste erstellen
-    todo_frame = ttk.Labelframe(root, text="To-Do List", bootstyle="primary")  # Höhe direkt begrenzen
+    todo_frame = ttk.Labelframe(
+        root, text="To-Do List", bootstyle="primary")  # Höhe direkt begrenzen
     todo_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
     # Spaltenbreite konfigurieren
@@ -16,7 +38,6 @@ def create_todo_list(root):
     # Zeilenhöhe konfigurieren (reduzieren)
     todo_frame.grid_rowconfigure(2, weight=1)  # Minimale Höhe
 
-
     # ======================
     #   Toolbar: 2 Buttons
     # ======================
@@ -24,8 +45,10 @@ def create_todo_list(root):
     toolbar.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 4))
     toolbar.grid_columnconfigure(3, weight=1)
 
-    btn_delete_selected = ttk.Button(toolbar, text="Markierte löschen", bootstyle=DANGER)
-    btn_edit_selected   = ttk.Button(toolbar, text="Markierte bearbeiten", bootstyle=INFO)
+    btn_delete_selected = ttk.Button(
+        toolbar, text="Markierte löschen", bootstyle=DANGER)
+    btn_edit_selected = ttk.Button(
+        toolbar, text="Markierte bearbeiten", bootstyle=INFO)
 
     btn_delete_selected.grid(row=0, column=0, padx=(0, 8))
     btn_edit_selected.grid(row=0, column=1)
@@ -42,7 +65,8 @@ def create_todo_list(root):
     input_frame.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 4))
     input_frame.grid_columnconfigure(1, weight=1)
 
-    ttk.Label(input_frame, text="Neue Aufgabe:").grid(row=0, column=0, padx=(0, 6))
+    ttk.Label(input_frame, text="Neue Aufgabe:").grid(
+        row=0, column=0, padx=(0, 6))
     task_entry = ttk.Entry(input_frame)
     task_entry.grid(row=0, column=1, sticky="ew")
     add_btn = ttk.Button(input_frame, text="Hinzufügen", bootstyle=SUCCESS)
@@ -57,13 +81,15 @@ def create_todo_list(root):
 
     canvas = tk.Canvas(scroll_container, highlightthickness=0)
     items_frame = ttk.Frame(canvas)
-    scrollbar = ttk.Scrollbar(scroll_container, orient="vertical", command=canvas.yview)
+    scrollbar = ttk.Scrollbar(
+        scroll_container, orient="vertical", command=canvas.yview)
     canvas.configure(yscrollcommand=scrollbar.set)
 
     canvas.grid(row=0, column=0, sticky="nsew")
     scrollbar.grid(row=0, column=1, sticky="ns")
 
-    items_window = canvas.create_window((0, 0), window=items_frame, anchor="nw")
+    items_window = canvas.create_window(
+        (0, 0), window=items_frame, anchor="nw")
 
     def _on_frame_configure(event):
         canvas.configure(scrollregion=canvas.bbox("all"))
@@ -96,7 +122,8 @@ def create_todo_list(root):
         def _save_row_from_entry(event=None):
             new_text = entry.get().strip()
             if not new_text:
-                messagebox.showinfo("Hinweis", "Der Text darf nicht leer sein.")
+                messagebox.showinfo(
+                    "Hinweis", "Der Text darf nicht leer sein.")
                 return
             label.configure(text=new_text)
             row._meta["text"] = new_text
@@ -124,6 +151,8 @@ def create_todo_list(root):
             return
         _create_task_row(txt)
         task_entry.delete(0, tk.END)
+        # Speichern nach Hinzufügen
+        _save_to_json()
 
     add_btn.configure(command=_add_task)
     task_entry.bind("<Return>", _add_task)
@@ -144,6 +173,8 @@ def create_todo_list(root):
             if row in todo_frame._state["tasks"]:
                 todo_frame._state["tasks"].remove(row)
             row.destroy()
+        # Speichern nach Löschen
+        _save_to_json()
 
     btn_delete_selected.configure(command=_delete_selected)
 
@@ -172,7 +203,8 @@ def create_todo_list(root):
 
         # Globale UI: Button zum Speichern umschalten
         todo_frame._state["editing_active"] = True
-        btn_edit_selected.configure(text="Änderungen speichern", bootstyle=SUCCESS, command=_save_edit_selected)
+        btn_edit_selected.configure(
+            text="Änderungen speichern", bootstyle=SUCCESS, command=_save_edit_selected)
 
     def _save_edit_selected(event=None):
         # Speichert alle bearbeitenden (markierten oder nicht) Zeilen
@@ -196,19 +228,31 @@ def create_todo_list(root):
                 row._meta["vars"]["selected_var"].set(False)
 
         if not any_edited:
-            messagebox.showinfo("Hinweis", "Keine Zeile befindet sich im Bearbeitungsmodus.")
+            messagebox.showinfo(
+                "Hinweis", "Keine Zeile befindet sich im Bearbeitungsmodus.")
             return
 
         # Globalen Modus beenden und Button zurücksetzen
         todo_frame._state["editing_active"] = False
-        btn_edit_selected.configure(text="Markierte bearbeiten", bootstyle=INFO, command=_start_edit_selected)
+        btn_edit_selected.configure(
+            text="Markierte bearbeiten", bootstyle=INFO, command=_start_edit_selected)
+
+        # Speichern nach Bearbeitung
+        _save_to_json()
 
     # Button initial: startet die Bearbeitung
     btn_edit_selected.configure(command=_start_edit_selected)
 
-    # Optional: Beispiel-Tasks
-    for t in ["Task 1", "Task 2", "Task 3"]:
+    # --- JSON Speichern/Laden Funktionen ---
+    def _save_to_json():
+        """Speichert alle Aufgaben in JSON Datei"""
+        tasks_data = [row._meta["text"] for row in todo_frame._state["tasks"]]
+        save_tasks(tasks_data)
+
+    # --- Geladene Tasks laden ---
+    # Zunächst die gespeicherten Tasks laden
+    loaded_tasks = load_tasks()
+    for t in loaded_tasks:
         _create_task_row(t)
 
     return todo_frame
-
