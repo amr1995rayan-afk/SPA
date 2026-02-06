@@ -7,24 +7,29 @@ import os
 
 
 def create_todo_list(root):
+    # JSON-Datei für Aufgaben
+    JSON_FILE = "todo_tasks.json"
 
-    # --- JSON Datei-Verwaltung ---
-    todo_file = os.path.join(os.path.dirname(__file__), "tasks.json")
+    # --- Hilfsfunktionen für JSON-Persistenz ---
+    def save_tasks_to_json():
+        """Speichert alle Aufgaben in JSON-Datei"""
+        tasks_data = [row._meta["text"] for row in todo_frame._state["tasks"]]
+        try:
+            with open(JSON_FILE, "w", encoding="utf-8") as f:
+                json.dump(tasks_data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Fehler beim Speichern: {e}")
 
-    def load_tasks():
-        """Lädt Aufgaben aus JSON Datei"""
-        if os.path.exists(todo_file):
+    def load_tasks_from_json():
+        """Lädt Aufgaben aus JSON-Datei"""
+        if os.path.exists(JSON_FILE):
             try:
-                with open(todo_file, 'r', encoding='utf-8') as f:
+                with open(JSON_FILE, "r", encoding="utf-8") as f:
                     return json.load(f)
-            except:
+            except Exception as e:
+                print(f"Fehler beim Laden: {e}")
                 return []
         return []
-
-    def save_tasks(tasks):
-        """Speichert Aufgaben in JSON Datei"""
-        with open(todo_file, 'w', encoding='utf-8') as f:
-            json.dump(tasks, f, ensure_ascii=False, indent=2)
 
     # --- Frame ---
     # To-Do-Liste erstellen
@@ -151,8 +156,7 @@ def create_todo_list(root):
             return
         _create_task_row(txt)
         task_entry.delete(0, tk.END)
-        # Speichern nach Hinzufügen
-        _save_to_json()
+        save_tasks_to_json()  # Nach dem Hinzufügen speichern
 
     add_btn.configure(command=_add_task)
     task_entry.bind("<Return>", _add_task)
@@ -173,8 +177,7 @@ def create_todo_list(root):
             if row in todo_frame._state["tasks"]:
                 todo_frame._state["tasks"].remove(row)
             row.destroy()
-        # Speichern nach Löschen
-        _save_to_json()
+        save_tasks_to_json()  # Nach dem Löschen speichern
 
     btn_delete_selected.configure(command=_delete_selected)
 
@@ -236,23 +239,20 @@ def create_todo_list(root):
         todo_frame._state["editing_active"] = False
         btn_edit_selected.configure(
             text="Markierte bearbeiten", bootstyle=INFO, command=_start_edit_selected)
-
-        # Speichern nach Bearbeitung
-        _save_to_json()
+        save_tasks_to_json()  # Nach dem Bearbeiten speichern
 
     # Button initial: startet die Bearbeitung
     btn_edit_selected.configure(command=_start_edit_selected)
 
-    # --- JSON Speichern/Laden Funktionen ---
-    def _save_to_json():
-        """Speichert alle Aufgaben in JSON Datei"""
-        tasks_data = [row._meta["text"] for row in todo_frame._state["tasks"]]
-        save_tasks(tasks_data)
-
-    # --- Geladene Tasks laden ---
-    # Zunächst die gespeicherten Tasks laden
-    loaded_tasks = load_tasks()
-    for t in loaded_tasks:
-        _create_task_row(t)
+    # Aufgaben aus JSON-Datei laden
+    loaded_tasks = load_tasks_from_json()
+    if loaded_tasks:
+        for task_text in loaded_tasks:
+            _create_task_row(task_text)
+    else:
+        # Falls keine gespeicherten Aufgaben vorhanden sind, Beispiel-Tasks erstellen
+        for t in []:
+            _create_task_row(t)
+        save_tasks_to_json()
 
     return todo_frame

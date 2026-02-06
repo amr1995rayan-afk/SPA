@@ -15,55 +15,27 @@ def build_chat_ui(parent):
     Requires env var GITHUB_TOKEN (for GitHub Models) or OPENAI_API_KEY (for OpenAI).
     """
 
+    # --- Choose ONE of these setups ---
+
+    # A) GitHub Models (recommended if you're using GITHUB_TOKEN)
+    token = os.getenv("GITHUB_TOKEN")
+    client = None
+    model_name = "gpt-4o-mini"
+
+    if token:
+        client = OpenAI(
+            api_key=token, base_url="https://models.github.ai/inference")
+    else:
+        # B) OpenAI Platform (fallback if GITHUB_TOKEN not set)
+        key = os.getenv("OPENAI_API_KEY")
+        if key:
+            client = OpenAI(api_key=key)
+
+    # If neither token is available, client will be None
+
     # --- Frame ---
     frame = ttk.Frame(parent, padding=10)
     frame.pack(fill=BOTH, expand=True)
-
-    # --- Provider Selection ---
-    provider_frame = ttk.Frame(frame)
-    provider_frame.pack(fill=X, pady=(0, 10))
-
-    ttk.Label(provider_frame, text="KI-Anbieter:").pack(side="left", padx=(0, 10))
-
-    provider_var = ttk.StringVar(value="github")
-    providers = {
-        "github": "GitHub Models",
-        "openai": "OpenAI",
-        "perplexity": "Perplexity"
-    }
-
-    for key, label in providers.items():
-        ttk.Radiobutton(provider_frame, text=label,
-                        variable=provider_var, value=key).pack(side="left", padx=5)
-
-    # --- Initialize client based on provider ---
-    def get_client():
-        provider = provider_var.get()
-
-        if provider == "github":
-            token = os.getenv("GITHUB_TOKEN")
-            if not token:
-                raise RuntimeError(
-                    "Set GITHUB_TOKEN in your environment first.")
-            client = OpenAI(
-                api_key=token, base_url="https://models.github.ai/inference")
-            return client, "gpt-4o-mini"
-
-        elif provider == "openai":
-            key = os.getenv("OPENAI_API_KEY")
-            if not key:
-                raise RuntimeError(
-                    "Set OPENAI_API_KEY in your environment first.")
-            client = OpenAI(api_key=key)
-            return client, "gpt-4o-mini"
-
-        elif provider == "perplexity":
-            key = os.getenv("PERPLEXITY_API_KEY")
-            if not key:
-                raise RuntimeError(
-                    "Set PERPLEXITY_API_KEY in your environment first.")
-            client = OpenAI(api_key=key, base_url="https://api.perplexity.ai")
-            return client, "llama-3.1-sonar-small-128k-online"
 
     # --- Conversation state ---
     messages = [{"role": "system", "content": "You are a helpful assistant."}]
@@ -100,6 +72,13 @@ def build_chat_ui(parent):
     def send_message(event=None):
         print("SEND CLICKED")
 
+        # Prüfe, ob ein API-Client verfügbar ist
+        if client is None:
+            append("assistant", "⚠️ Fehler: Kein API-Token konfiguriert!\n\n"
+                   "Bitte erstelle eine .env-Datei mit GITHUB_TOKEN oder OPENAI_API_KEY.\n"
+                   "Siehe .env.example für Details.")
+            return
+
         user_text = user_entry.get().strip()
         if not user_text:
             return
@@ -113,7 +92,6 @@ def build_chat_ui(parent):
 
         def worker():
             try:
-                client, model_name = get_client()
                 resp = client.chat.completions.create(
                     model=model_name,
                     messages=messages,

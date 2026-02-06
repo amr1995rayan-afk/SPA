@@ -1,5 +1,7 @@
 __pycache__/
 *.pyc
 .env
+todo_tasks.json
+data/
 
 
